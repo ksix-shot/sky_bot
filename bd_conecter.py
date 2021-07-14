@@ -20,6 +20,12 @@ class SQLiter:
                                          (telegram_user_id,)).fetchall()
             return bool(len(result))
 
+    def user_info(self, telegram_user_id):
+        # test user in base
+        with self.connection:
+            result = self.cursor.execute("SELECT * FROM users WHERE telegram_user_id = ?",
+                                         (telegram_user_id,)).fetchall()
+            return result[0]
     def add_user(self, telegram_user_id, name, phone, inn, status):
         with self.connection:
             return self.cursor.execute(

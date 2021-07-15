@@ -68,31 +68,41 @@ async def get_inn(message: types.Message, state: FSMContext):
 async def get_number(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['number'] = message.text
-    await message.answer("Хотели бы получать новости из мира 1С? Напишите ДА/НЕТ")
+    bool_keybord = ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text='ДА'), KeyboardButton(text='НЕТ')]],
+        resize_keyboard=True
+
+    )
+    await message.answer("Хотели бы получать новости из мира 1С? Напишите ДА/НЕТ", reply_markup=bool_keybord)
     await Register_form.next()
 
 
 @dp.message_handler(state=Register_form.sub_news)
 async def get_sub(message: types.Message, state: FSMContext):
-    if message.text.lower() == 'да':
+    #ТРЕБУЕТСЯ ДОРАБОТКА ПРИСВАИВАНИЕ ПЕРЕМЕННЫХ МЕДЛЕНИЕ ЧЕМ АСИНХРОННЫЙ ВЫЗОВ ФУНКЦИИ
+    if message.text == 'ДА':
         async with state.proxy() as data:
-            data['status'] = True
-    elif message.text.lower() == 'нет':
+            data["status"] = True
+            db.add_user(telegram_user_id=message.from_user.id, name=data['name'],
+                              phone=data['number'], inn=data['inn'], status=data["status"])
+    elif message.text == 'НЕТ':
         async with state.proxy() as data:
-            data['status'] = False
+            data["status"] = False
+            db.add_user(telegram_user_id=message.from_user.id, name=data['name'],
+                              phone=data['number'], inn=data['inn'], status=data["status"])
 
-    db.add_user(telegram_user_id=message.from_user.id, name=data['name'],
-                phone=data['number'], inn=data['inn'], status=data['status'])
-    await message.answer('Отлично, теперь я смогу формировать заявки и будете тратить меньше времени')
+    #await db.add_user(telegram_user_id=message.from_user.id, name=data['name'],
+            #phone=data['number'], inn=data['inn'], status=data["status"])
+    await message.answer('Отлично, теперь я смогу формировать заявки и будете тратить меньше времени', reply_markup=ReplyKeyboardRemove())
     await state.finish()
 
 
-@dp.message_handler(commands='vopros')
+@dp.message_handler(text='Заказать консультацию')
 async def create_zaiavka(message: types.Message):
     if not db.user_exists(telegram_user_id=message.from_user.id):
         await bot.send_message(message.from_user.id, "Мы с вами еще не знакомы))) Для того что бы завести заявку нужно ввести /start")
     else:
-        await bot.send_message(message.from_user.id, "По какой программе у вас вопрос?")
+        await bot.send_message(message.from_user.id, "По какой программе у вас вопрос?", reply_markup=ReplyKeyboardRemove())
         await CreateOrder.programa.set()
 
 
@@ -134,7 +144,7 @@ async def get_number(message: types.Message, state: FSMContext):
 @dp.message_handler(commands='menu')
 async def show_menu(message: types.Message):
     number = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton("/vopros")]],
+        keyboard=[[KeyboardButton("Заказать консультацию")]],
         resize_keyboard=True
 
     )
